@@ -15,26 +15,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        run: xcodegen generate
+      - name: Extract iOS source archive
+        run: |
+          set -euo pipefail
+          tar -xzf "ios_source (1).tar.gz"
 
       - name: Build unsigned xcarchive
         run: |
           set -o pipefail
           mkdir -p build
           if ! xcodebuild \
-            -project VoiceShell.xcodeproj \
-            -scheme VoiceShell \
+            -workspace ios/Hertziness.xcworkspace \
+            -scheme Hertziness \
             -configuration Release \
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            archive -archivePath build/VoiceShell.xcarchive | tee build/xcodebuild.log; then
+            archive -archivePath build/Hertziness.xcarchive | tee build/xcodebuild.log; then
             msg="$(tail -n 40 build/xcodebuild.log | tr '\n' ' ' | sed 's/\"/\\\"/g')"
             echo "::error::xcodebuild failed: ${msg}"
             exit 74
@@ -42,8 +41,14 @@ jobs:
 
       - name: Pack unsigned ipa
         run: |
+          set -euo pipefail
           mkdir -p build/Payload
-          cp -R build/VoiceShell.xcarchive/Products/Applications/VoiceShell.app build/Payload/
+          app_path="$(find build/Hertziness.xcarchive/Products/Applications -maxdepth 1 -name '*.app' | head -n 1)"
+          if [ -z "${app_path}" ]; then
+            echo "::error::No .app found in archive output"
+            exit 75
+          fi
+          cp -R "${app_path}" build/Payload/
           (cd build && zip -r voice-hertz-unsigned.ipa Payload)
 
       - name: Upload artifact
