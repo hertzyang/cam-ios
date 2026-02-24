@@ -26,15 +26,15 @@ jobs:
           set -o pipefail
           mkdir -p build
           if ! xcodebuild \
-            -project CamPush.xcodeproj \
-            -scheme CamPush \
+            -project VoiceShell.xcodeproj \
+            -scheme VoiceShell \
             -configuration Release \
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            archive -archivePath build/CamPush.xcarchive | tee build/xcodebuild.log; then
+            archive -archivePath build/VoiceShell.xcarchive | tee build/xcodebuild.log; then
             msg="$(tail -n 40 build/xcodebuild.log | tr '\n' ' ' | sed 's/\"/\\\"/g')"
             echo "::error::xcodebuild failed: ${msg}"
             exit 74
@@ -43,12 +43,12 @@ jobs:
       - name: Pack unsigned ipa
         run: |
           mkdir -p build/Payload
-          cp -R build/CamPush.xcarchive/Products/Applications/CamPush.app build/Payload/
-          (cd build && zip -r app-unsigned.ipa Payload)
+          cp -R build/VoiceShell.xcarchive/Products/Applications/VoiceShell.app build/Payload/
+          (cd build && zip -r voice-hertz-unsigned.ipa Payload)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cam-push-unsigned-ipa
-          path: build/app-unsigned.ipa
+          name: voice-hertz-unsigned-ipa
+          path: build/voice-hertz-unsigned.ipa
           if-no-files-found: error
